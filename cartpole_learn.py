@@ -29,8 +29,12 @@ class CartPoleLearner():
         # print('other_calc', other_calc)
         return tuple(reduced_obs)
 
-    def choose_action(self, state, epsilon):
-        return self.env.action_space.sample()
+    def choose_action(self, state):
+        if state[2] <= 5:
+            action = 0
+        else:
+            action = 1
+        return action
 
     # exploration rate (discount factor)
     def calc_epsilon(self, time):
@@ -48,8 +52,6 @@ class CartPoleLearner():
         self.q_table[old_state][action] += alpha * (reward + self.gamma * np.max(self.q_table[new_state]) - self.q_table[old_state][action])
 
     def run(self):
-        count = 0
-
         for i in range(self.num_episodes):
             epsilon = self.calc_epsilon(i)
             alpha = self.calc_alpha(i)
@@ -61,8 +63,8 @@ class CartPoleLearner():
                 count += 1
                 sleep(0.1)
                 self.env.render()
-                action = self.choose_action(current_state, epsilon)
-                observation, reward, done, info = self.env.step(0)
+                action = self.choose_action(current_state)
+                observation, reward, done, info = self.env.step(action)
                 new_state = self.reduce(observation)
                 self.update_q(current_state, action, reward, new_state, alpha)
                 current_state = new_state
