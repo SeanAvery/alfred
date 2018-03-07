@@ -24,8 +24,10 @@ class CartPoleLearner():
 
     def reduce(self, obs):
         ratios = [(obs[i] + abs(self.lower_bounds[i])) / (abs(self.upper_bounds[i]) - self.lower_bounds[i]) for i in range(len(obs))]
-        reduced_obs = [round((self.buckets[i] - 1) * ratios[i]) for i in range(len(obs))]
-        return reduced_obs
+        reduced_obs = [int(round((self.buckets[i] - 1)) * ratios[i]) for i in range(len(obs))]
+        # reduced_obs = [min(self.buckets[i] - 1, max(0, reduced_obs[i])) for i in range(len(obs)) ]
+        # print('other_calc', other_calc)
+        return tuple(reduced_obs)
 
     def choose_action(self, state, epsilon):
         return self.env.action_space.sample()
@@ -42,16 +44,8 @@ class CartPoleLearner():
         alpha = 1 - time/100
         return max(self.min_alpha, alpha)
 
-    def update_q(self, current_state, action, reward, new_state, alpha):
-        print('old_state', old_state)
-        print('new_state', new_state)
-        print('action', action)
-        print('reward', reward)
+    def update_q(self, old_state, action, reward, new_state, alpha):
         self.q_table[old_state][action] += alpha * (reward + self.gamma * np.max(self.q_table[new_state]) - self.q_table[old_state][action])
-        # self.Q[state_old][action] += alpha * (reward + self.gamma * np.max(self.Q[state_new]) - self.Q[state_old][action])
-
-        print('q table after update', self.q_table)
-        # self.q_table[old_state][action] += alpha * (reward + self.gamma * np.max(self.q_table[state_new]) - self.q_table[old_state][action])
 
     def run(self):
         count = 0
