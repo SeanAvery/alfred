@@ -5,20 +5,20 @@ from time import sleep
 
 class CartPoleLearner():
     def __init__(self, opts):
-        print(opts)
+
+        # cartpole simulation config
         self.num_episodes = opts['num_episodes']
         self.num_win_ticks = opts['num_win_ticks']
         self.env = gym.make('CartPole-v0')
-        self.angle_max = 0
 
-    def reduce(self, observation):
-        print(observation[2])
-        degrees = math.degrees(observation[2])
-        if degrees > self.angle_max:
-            self.angle_max = degrees
-        print('degrees', degrees)
-        print(self.angle_max)
-        return True
+        # state reducer
+        self.buckets = opts['buckets']
+        self.upper_bounds = [self.env.observation_space.high[0], 3.4, self.env.observation_space.high[2], 3.4]
+        self.lower_bounds = [self.env.observation_space.low[0], -3.4, self.env.observation_space.low[2], -3.4]
+
+    def reduce(self, obs):
+        ratios = [(obs[i] + abs(self.lower_bounds[i])) / (abs(self.upper_bounds[i]) - self.lower_bounds[i]) for i in range(len(obs))]
+        reduced_obs = [round((self.buckets[i] - 1) * ratios[i]) for i in range(len(obs))]
 
     def run(self):
         count = 0
@@ -41,7 +41,8 @@ if __name__ == '__main__':
         'num_episodes': 100,
         'num_win_ticks': 200,
         'num_theta_buckets': 5,
-        'num_theta_prime_buckets': 5
+        'num_theta_prime_buckets': 5,
+        'buckets': [1, 1, 12, 12]
     }
 
     learner = CartPoleLearner(options)
