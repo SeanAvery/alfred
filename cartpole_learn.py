@@ -30,31 +30,48 @@ class CartPoleLearner():
     def choose_action(self, state, epsilon):
         return self.env.action_space.sample()
 
+    # exploration rate (discount factor)
     def calc_epsilon(self, time):
         # linear decay w.r.t. time
         epsilon = 1 - time/100
         return max(self.min_epsilon, epsilon)
 
+    # learning rate
     def calc_alpha(self, time):
         # linear decay w.r.t. time
-        alpha = 1 = time/100
-        return max(self.min_alpha, epsilon)
+        alpha = 1 - time/100
+        return max(self.min_alpha, alpha)
+
+    def update_q(self, current_state, action, reward, new_state, alpha):
+        print('old_state', old_state)
+        print('new_state', new_state)
+        print('action', action)
+        print('reward', reward)
+        self.q_table[old_state][action] += alpha * (reward + self.gamma * np.max(self.q_table[new_state]) - self.q_table[old_state][action])
+        # self.Q[state_old][action] += alpha * (reward + self.gamma * np.max(self.Q[state_new]) - self.Q[state_old][action])
+
+        print('q table after update', self.q_table)
+        # self.q_table[old_state][action] += alpha * (reward + self.gamma * np.max(self.q_table[state_new]) - self.q_table[old_state][action])
+
     def run(self):
         count = 0
 
         for i in range(self.num_episodes):
-            epsilon = self.get_epsilon(i)
-            alpha = self.get_alpha(i)
-            count +=1
+            epsilon = self.calc_epsilon(i)
+            alpha = self.calc_alpha(i)
+            count = 0
             current_state = self.reduce(self.env.reset())
             done = False
 
             while not done:
+                count += 1
                 sleep(0.1)
                 self.env.render()
                 action = self.choose_action(current_state, epsilon)
                 observation, reward, done, info = self.env.step(0)
-                current_state = self.reduce(observation)
+                new_state = self.reduce(observation)
+                self.update_q(current_state, action, reward, new_state, alpha)
+                current_state = new_state
                 if done:
                     print('failed after {0} samples'.format(count))
                     break
