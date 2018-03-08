@@ -2,10 +2,6 @@ import gym
 import math
 import numpy as np
 from time import sleep
-# import plotly
-# plotly.tools.set_credentials_file(username='seanavery', api_key='vorCOvwjgZ7K3IVsB92H')
-# import plotly.plotly as py
-# import plotly.graph_objs as go
 import matplotlib.pyplot as plt
 import matplotlib.animation
 
@@ -40,7 +36,7 @@ class CartPoleLearner():
 
     def reduce(self, obs):
         ratios = [(obs[i] + abs(self.lower_bounds[i])) / (abs(self.upper_bounds[i]) - self.lower_bounds[i]) for i in range(len(obs))]
-        reduced_obs = [int(round((self.buckets[i] - 1)) * ratios[i]) for i in range(len(obs))]
+        reduced_obs = [int(round((self.buckets[i]) - 1) * ratios[i]) for i in range(len(obs))]
         # reduced_obs = [min(self.buckets[i] - 1, max(0, reduced_obs[i])) for i in range(len(obs)) ]
         return tuple(reduced_obs)
 
@@ -52,7 +48,11 @@ class CartPoleLearner():
 
     # exploration rate (discount factor)
     def calc_epsilon(self, time):
-        # exponential decay w.r.t. time
+        # linear decay w.r.t. time
+        epsilon = 1 - time/100
+        return max(self.min_epsilon, epsilon)
+
+        # logarithmic decay w.r.t. time
         if time == 0:
             return 1
         else:
@@ -71,6 +71,7 @@ class CartPoleLearner():
             alpha = 1 - math.log10(time)/2
             print('alpha', alpha)
             return max(self.min_alpha, alpha)
+
 
     def update_q(self, old_state, action, reward, new_state, alpha):
         self.q_table[old_state][action] += alpha * (reward + self.gamma * np.max(self.q_table[new_state]) - self.q_table[old_state][action])
@@ -166,7 +167,7 @@ if __name__ == '__main__':
         'num_win_ticks': 200,
         'num_theta_buckets': 5,
         'num_theta_prime_buckets': 5,
-        'buckets': (3, 4, 12, 12),
+        'buckets': (1, 1, 6, 12),
         'min_epsilon': 0.1,
         'min_alpha': 0.1,
         'gamma': 1
