@@ -1,3 +1,5 @@
+import os
+
 import keras.backend as K
 import keras.callbacks as cb
 from keras.models import Sequential
@@ -52,7 +54,6 @@ class DeepAgent():
 
         else:
             mini_batch = random.sample(self.memory, self.batch_size)
-            print('mini_batch', mini_batch)
             for old_state, action, reward, new_state, done in mini_batch:
                 if not done:
                     target = (reward + self.gamma * np.amax(self.model.predict(new_state)) )
@@ -81,7 +82,7 @@ class DeepAgent():
         else:
             return np.argmax(self.model.predict(state)[0])
 
-    def run(self, do_train=False, num_episodes):
+    def run(self, do_train, num_episodes):
         for episode in range(num_episodes):
             old_state = self.env.reset().reshape(1, self.env.observation_space.shape[0])
             done=False
@@ -111,7 +112,14 @@ if __name__ == '__main__':
         'num_episodes': 1000
     }
 
+    # setup
+    if not os.path.exists('./models'):
+        os.makedirs('./models')
+
     agent = DeepAgent(options)
     agent.build_model()
     agent.build_gym()
-    agent.train()
+    agent.run(True, 1000)
+    agent.run(False, 200)
+
+    agent.model.save_weights('models/cartpole-v0.h5', overwrite=True)
