@@ -1,6 +1,9 @@
+import keras.backend as K
+import keras.callbacks as cb
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
+from tensorflow.python import debug as tf_debug
 
 import numpy as np
 import random
@@ -31,8 +34,12 @@ class DeepAgent():
     '''
 
     def build_model(self):
+        # sess = K.get_session()
+        # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+        # K.set_session(sess)
+
         model = Sequential()
-        model.add(Dense(12, activation='relu', input_dim=1))
+        model.add(Dense(12, activation='relu', input_dim=4))
         model.add(Dense(12, activation='relu'))
         model.add(Dense(2))
         model.compile(Adam(lr=0.001), 'mse')
@@ -41,7 +48,6 @@ class DeepAgent():
 
     def replay(self):
         if len(self.memory) < self.batch_size:
-            print('not enough samples')
             return 0
 
         else:
@@ -50,9 +56,10 @@ class DeepAgent():
             for old_state, action, reward, new_state, done in mini_batch:
                 if not done:
                     target = (reward + self.gamma * np.amax(self.model.predict(new_state)) )
-
+                else:
+                    target = reward
                 target_f = self.model.predict(old_state)
-                target_f[action] = target
+                target_f[0][action] = target
                 self.model.fit(old_state, target_f, epochs=1, verbose=0)
 
             if self.epsilon > self.epsilon_min:
@@ -70,25 +77,20 @@ class DeepAgent():
 
     def choose_action(self, state):
         if np.random.rand() <= self.epsilon:
-            print('random action')
             return random.randrange(self.action_size)
         else:
-            print('neural network predict')
-            action = np.argmax(self.model.predict(state))
-            print('action', action)
-            return action
+            return np.argmax(self.model.predict(state)[0])
 
-    def run(self, do_train=False):
-        for episode in range(self.num_episodes-98):
-            old_state = np.array(self.env.reset())
+    def run(self, do_train=False, num_episodes):
+        for episode in range(num_episodes):
+            old_state = self.env.reset().reshape(1, self.env.observation_space.shape[0])
             done=False
             total_reward = 0
 
             while not done:
                 action = self.choose_action(old_state)
-                print('action', action)
                 new_state, reward, done, info = self.env.step(action)
-                new_state = np.array(new_state)
+                new_state = new_state.reshape(1, self.env.observation_space.shape[0])
                 total_reward += reward
 
                 if do_train:
@@ -108,6 +110,7 @@ if __name__ == '__main__':
         'monitor_dir': 'results/',
         'num_episodes': 1000
     }
+
     agent = DeepAgent(options)
     agent.build_model()
     agent.build_gym()
